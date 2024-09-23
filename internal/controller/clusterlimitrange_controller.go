@@ -18,7 +18,7 @@ package controller
 
 import (
 	"context"
-    "errors"
+    "k8s.io/apimachinery/pkg/api/errors"
     corev1 "k8s.io/api/core/v1"
     metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
     "k8s.io/apimachinery/pkg/util/sets"
@@ -96,9 +96,9 @@ func (r *ClusterLimitRangeReconciler) Reconcile(ctx context.Context, req ctrl.Re
                     Name:      "default-limits",
                     Namespace: namespaceName,
                 },
-                Spec: corev1.LimitRangeSpec{
-                    Limits: clr.Spec.Limits, // Use the limits defined in the ClusterLimitRange spec
-                },
+				Spec: corev1.LimitRangeSpec{
+					Limits: translateClusterLimits(clr.Spec.Limits),
+				},
             }
 
             if err := r.Create(ctx, limitRange); err != nil {
