@@ -4,6 +4,10 @@
 
 The **cluster-limit-range-controller** is a Kubernetes custom controller that manages `LimitRange` objects across all namespaces based on a defined `ClusterLimitRange` custom resource. This controller ensures that specified resource limits are applied only to selected namespaces while respecting user-defined exceptions.
 
+## Why
+Well, you can (and should) create LimitRange objects in namespace scope, the ClusterLimitRange can act like a global scope limit range, but restrained by the hierarchy:
+pod scope resource -> LimitRange (namespace scope) -> ClusterLimitRange (cluster scope), this means that when no pod and namespace are given, ClusterLimitRange kicks in, garanteeing no process will eat up you server's resources, or it can act like namespace scope if you use "applyNamespaces" and the list of namespaces you want to restraint resources.
+
 ## Features
 
 - Automatically applies `LimitRange` objects to all or specific namespaces.
