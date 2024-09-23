@@ -1,10 +1,47 @@
 # cluster-limit-range-controller
-// TODO(user): Add simple overview of use/purpose
 
-## Description
-// TODO(user): An in-depth paragraph about your project and overview of use
+## Overview
+
+The **cluster-limit-range-controller** is a Kubernetes custom controller that manages `LimitRange` objects across all namespaces based on a defined `ClusterLimitRange` custom resource. This controller ensures that specified resource limits are applied only to selected namespaces while respecting user-defined exceptions.
+
+## Features
+
+- Automatically applies `LimitRange` objects to all or specific namespaces.
+- Ignores namespaces defined in the `ignoredNamespaces` list.
+- Sync `LimitRange` objects when updated.
 
 ## Getting Started
+```yaml
+apiVersion: lag0.com.br/v1
+kind: ClusterLimitRange
+metadata:
+  name: default-cluster-lr
+spec:
+# List of namespaces to be ignored
+  ignoredNamespaces:
+    - kube-system        
+    - kube-public
+  # List of namespaces to apply LimitRange, leave it empty to apply to all (except if ignored)
+  applyNamespaces:
+    - dev                
+    - staging
+  limits:
+    - type: Container     # Type of resource limits
+      max:
+        cpu: "2"         # Maximum CPU limit
+        memory: "4Gi"    # Maximum memory limit
+      min:
+        cpu: "200m"      # Minimum CPU limit
+        memory: "256Mi"   # Minimum memory limit
+      default:
+        cpu: "500m"      # Default CPU limit
+        memory: "1Gi"    # Default memory limit
+      defaultRequest:
+        cpu: "300m"      # Default request CPU limit
+        memory: "512Mi"   # Default request memory limit
+      maxLimitRequestRatio:
+        cpu: "4"         # Max limit request ratio for CPU
+```
 
 ### Prerequisites
 - go version v1.22.0+

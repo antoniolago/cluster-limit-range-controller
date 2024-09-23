@@ -17,7 +17,7 @@ jobs:
         - dockerfile: ./Dockerfile
           image: ghcr.io/antoniolago/cluster-limit-range-controller
           context: ./
-          platform: linux/arm64, linux/amd64
+          platform: linux/arm64 #, linux/amd64
     permissions:
       contents: read
       packages: write
