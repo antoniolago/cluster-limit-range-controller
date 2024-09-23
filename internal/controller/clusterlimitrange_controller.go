@@ -40,10 +40,6 @@ type ClusterLimitRangeReconciler struct {
 // +kubebuilder:rbac:groups=lag0.com.br,resources=clusterlimitranges/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=lag0.com.br,resources=clusterlimitranges/finalizers,verbs=update
 
-type ClusterLimitRangeReconciler struct {
-    client.Client
-}
-
 // Reconcile function
 func (r *ClusterLimitRangeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
     log := log.FromContext(ctx)
