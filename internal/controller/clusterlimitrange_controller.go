@@ -91,15 +91,18 @@ func (r *ClusterLimitRangeReconciler) Reconcile(ctx context.Context, req ctrl.Re
 
         // Handle LimitRange creation
         if len(limitRangeList.Items) == 0 {
-            limitRange := &corev1.LimitRange{
-                ObjectMeta: metav1.ObjectMeta{
-                    Name:      "default-limits",
-                    Namespace: namespaceName,
-                },
+           limitRange := &corev1.LimitRange{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "global-limits",
+					Namespace: namespaceName,
+					Labels: map[string]string{
+						"app": "cluster-limit-range-controller",
+					},
+				},
 				Spec: corev1.LimitRangeSpec{
 					Limits: translateClusterLimits(clr.Spec.Limits),
 				},
-            }
+			}
 
             if err := r.Create(ctx, limitRange); err != nil {
                 log.Error(err, "unable to create LimitRange for namespace", "namespace", namespaceName)
@@ -111,18 +114,61 @@ func (r *ClusterLimitRangeReconciler) Reconcile(ctx context.Context, req ctrl.Re
             existingLimitRanges[namespaceName] = limitRangeList.Items[0] // Keep track of existing LimitRanges
         }
     }
-
-    // Handle deletions of LimitRange objects for namespaces no longer in applyNamespaces
-    for _, ns := range existingLimitRanges {
-        namespaceName := ns.Namespace
-        if !applyNamespaces.Has(namespaceName) {
-            log.Info("Deleting LimitRange for namespace no longer in applyNamespaces", "namespace", namespaceName)
-            if err := r.Delete(ctx, &ns); err != nil {
-                log.Error(err, "unable to delete LimitRange for namespace", "namespace", namespaceName)
-                return ctrl.Result{}, err
-            }
-        }
-    }
+	for _, ns := range namespaces.Items {
+		namespaceName := ns.Name
+	
+		// Skip namespaces that are in the ignoredNamespaces list
+		if ignoredNamespaces.Has(namespaceName) {
+			// Delete the LimitRange if it exists and was created by this controller
+			if limitRange, exists := existingLimitRanges[namespaceName]; exists && limitRange.Labels["app"] == "cluster-limit-range-controller" {
+				log.Info("Deleting LimitRange for namespace now in ignoredNamespaces", "namespace", namespaceName)
+				if err := r.Delete(ctx, &limitRange); err != nil {
+					log.Error(err, "unable to delete LimitRange for namespace", "namespace", namespaceName)
+					return ctrl.Result{}, err
+				}
+			}
+			log.Info("Skipping namespace in ignoredNamespaces", "namespace", namespaceName)
+			continue
+		}
+	
+		// If applyNamespaces is specified, only apply to these namespaces
+		if len(applyNamespaces) > 0 && !applyNamespaces.Has(namespaceName) {
+			log.Info("Skipping namespace not in applyNamespaces", "namespace", namespaceName)
+			continue
+		}
+	
+		// Check if a LimitRange with the label already exists
+		var limitRangeList corev1.LimitRangeList
+		if err := r.List(ctx, &limitRangeList, client.InNamespace(namespaceName), client.MatchingLabels{"app": "cluster-limit-range-controller"}); err != nil {
+			log.Error(err, "unable to list LimitRanges for namespace", "namespace", namespaceName)
+			return ctrl.Result{}, err
+		}
+	
+		// Handle LimitRange creation or update
+		if len(limitRangeList.Items) == 0 {
+			limitRange := &corev1.LimitRange{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "global-limits",
+					Namespace: namespaceName,
+					Labels: map[string]string{
+						"app": "cluster-limit-range-controller",
+					},
+				},
+				Spec: corev1.LimitRangeSpec{
+					Limits: translateClusterLimits(clr.Spec.Limits),
+				},
+			}
+	
+			if err := r.Create(ctx, limitRange); err != nil {
+				log.Error(err, "unable to create LimitRange for namespace", "namespace", namespaceName)
+				return ctrl.Result{}, err
+			}
+	
+			log.Info("Created LimitRange for namespace", "namespace", namespaceName)
+		} else {
+			existingLimitRanges[namespaceName] = limitRangeList.Items[0] // Keep track of existing LimitRanges
+		}
+	}
 
     return ctrl.Result{}, nil
 }
