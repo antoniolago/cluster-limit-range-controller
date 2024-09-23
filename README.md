@@ -11,6 +11,16 @@ The **cluster-limit-range-controller** is a Kubernetes custom controller that ma
 - Sync `LimitRange` objects when updated.
 
 ## Getting Started
+
+Install:
+
+```
+git clone https://github.com/antoniolago/cluster-limit-range-controller
+kubectl apply -k ./cluster-limit-range-controller/config/default
+```
+
+Then apply with ClusterLimitRange object:
+
 ```yaml
 apiVersion: lag0.com.br/v1
 kind: ClusterLimitRange
