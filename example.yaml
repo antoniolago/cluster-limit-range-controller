@@ -14,7 +14,7 @@ spec:
   limits:
   - type: Container
     max:
-      ephemeral-storage: "10Gi"
+      ephemeral-storage: "9Gi"
     # min:
 #   cpu: "200m"
 #   memory: "256Mi"

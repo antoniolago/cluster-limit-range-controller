@@ -169,7 +169,18 @@ func (r *ClusterLimitRangeReconciler) Reconcile(ctx context.Context, req ctrl.Re
 			existingLimitRanges[namespaceName] = limitRangeList.Items[0] // Keep track of existing LimitRanges
 		}
 	}
-
+	for _, ns := range existingLimitRanges {
+		namespaceName := ns.Namespace
+		if len(applyNamespaces) > 0 && !applyNamespaces.Has(namespaceName)  {
+			log.Info("Deleting LimitRange for namespace no longer in applyNamespaces", "namespace", namespaceName)
+			if ns.Labels["app"] == "cluster-limit-range-controller" {
+				if err := r.Delete(ctx, &ns); err != nil {
+					log.Error(err, "unable to delete LimitRange for namespace", "namespace", namespaceName)
+					return ctrl.Result{}, err
+				}
+			}
+		}
+	}
     return ctrl.Result{}, nil
 }
 
@@ -213,6 +224,7 @@ func translateClusterLimits(clusterLimits []lag0v1.LimitRangeItem) []corev1.Limi
 func (r *ClusterLimitRangeReconciler) SetupWithManager(mgr ctrl.Manager) error {
     return ctrl.NewControllerManagedBy(mgr).
         For(&lag0v1.ClusterLimitRange{}).
+        Watches(&source.Kind{Type: &corev1.Namespace{}}, &handler.EnqueueRequestForObject{}).
+        Watches(&source.Kind{Type: &corev1.LimitRange{}}, &handler.EnqueueRequestForObject{}).
         Complete(r)
 }
-
