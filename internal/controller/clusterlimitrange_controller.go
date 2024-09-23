@@ -45,60 +45,84 @@ func (r *ClusterLimitRangeReconciler) Reconcile(ctx context.Context, req ctrl.Re
     log := log.FromContext(ctx)
 
     // Fetch the ClusterLimitRange instance
-    clr := &lag0v1.ClusterLimitRange{}
-    if err := r.Get(ctx, req.NamespacedName, clr); err != nil {
-        return ctrl.Result{}, client.IgnoreNotFound(err)
-    }
-
-    // Fetch all namespaces
-    namespaces := &corev1.NamespaceList{}
-    if err := r.List(ctx, namespaces); err != nil {
+    var clr myv1.ClusterLimitRange
+    if err := r.Get(ctx, req.NamespacedName, &clr); err != nil {
+        if errors.IsNotFound(err) {
+            return ctrl.Result{}, nil // Resource not found, ignore
+        }
         return ctrl.Result{}, err
     }
 
-    // Loop through namespaces
+    // Create sets for ignoredNamespaces and applyNamespaces
+    ignoredNamespaces := sets.NewString(clr.Spec.IgnoredNamespaces...)
+    applyNamespaces := sets.NewString(clr.Spec.ApplyNamespaces...)
+
+    // List all namespaces
+    var namespaces corev1.NamespaceList
+    if err := r.List(ctx, &namespaces); err != nil {
+        log.Error(err, "unable to list namespaces")
+        return ctrl.Result{}, err
+    }
+
+    // Map to keep track of applied LimitRanges
+    existingLimitRanges := make(map[string]corev1.LimitRange)
+
+    // Iterate through namespaces and handle LimitRanges
     for _, ns := range namespaces.Items {
         namespaceName := ns.Name
 
-        // Skip ignored namespaces
-        if isNamespaceIgnored(namespaceName, clr.Spec.IgnoredNamespaces) {
-            log.Info(fmt.Sprintf("Namespace %s is in the ignored list, skipping", namespaceName))
+        // Skip namespaces that are in the ignoredNamespaces list
+        if ignoredNamespaces.Has(namespaceName) {
+            log.Info("Skipping namespace in ignoredNamespaces", "namespace", namespaceName)
             continue
         }
 
-        // If applyNamespaces is not empty, check if the namespace is in the list
-        if len(clr.Spec.ApplyNamespaces) > 0 && !isNamespaceInList(namespaceName, clr.Spec.ApplyNamespaces) {
-            log.Info(fmt.Sprintf("Namespace %s is not in the applyNamespaces list, skipping", namespaceName))
+        // If applyNamespaces is specified, only apply to these namespaces
+        if len(applyNamespaces) > 0 && !applyNamespaces.Has(namespaceName) {
+            log.Info("Skipping namespace not in applyNamespaces", "namespace", namespaceName)
             continue
         }
 
-        // Check if the namespace already has a LimitRange
-        limitRangeList := &corev1.LimitRangeList{}
-        if err := r.List(ctx, limitRangeList, &client.ListOptions{Namespace: namespaceName}); err != nil {
-            return ctrl.Result{}, fmt.Errorf("error fetching LimitRanges for namespace %s: %v", namespaceName, err)
+        // Check if LimitRange already exists in this namespace
+        var limitRangeList corev1.LimitRangeList
+        if err := r.List(ctx, &limitRangeList, client.InNamespace(namespaceName)); err != nil {
+            log.Error(err, "unable to list LimitRanges for namespace", "namespace", namespaceName)
+            return ctrl.Result{}, err
         }
 
-        if len(limitRangeList.Items) > 0 {
-            // Skip if there's already a LimitRange in this namespace
-            log.Info(fmt.Sprintf("Namespace %s already has a LimitRange, skipping", namespaceName))
-            continue
-        }
+        // Handle LimitRange creation
+        if len(limitRangeList.Items) == 0 {
+            limitRange := &corev1.LimitRange{
+                ObjectMeta: metav1.ObjectMeta{
+                    Name:      "default-limits",
+                    Namespace: namespaceName,
+                },
+                Spec: corev1.LimitRangeSpec{
+                    Limits: clr.Spec.Limits, // Use the limits defined in the ClusterLimitRange spec
+                },
+            }
 
-        // No LimitRange exists, apply the new one
-        limitRange := &corev1.LimitRange{
-            ObjectMeta: metav1.ObjectMeta{
-                Name:      "cluster-limit-range",
-                Namespace: namespaceName,
-            },
-            Spec: corev1.LimitRangeSpec{
-                Limits: translateClusterLimits(clr.Spec.Limits),
-            },
-        }
+            if err := r.Create(ctx, limitRange); err != nil {
+                log.Error(err, "unable to create LimitRange for namespace", "namespace", namespaceName)
+                return ctrl.Result{}, err
+            }
 
-        if err := r.Create(ctx, limitRange); err != nil {
-            return ctrl.Result{}, fmt.Errorf("error creating LimitRange in namespace %s: %v", namespaceName, err)
+            log.Info("Created LimitRange for namespace", "namespace", namespaceName)
+        } else {
+            existingLimitRanges[namespaceName] = limitRangeList.Items[0] // Keep track of existing LimitRanges
         }
-        log.Info(fmt.Sprintf("Applied LimitRange to namespace %s", namespaceName))
+    }
+
+    // Handle deletions of LimitRange objects for namespaces no longer in applyNamespaces
+    for _, ns := range existingLimitRanges {
+        namespaceName := ns.Namespace
+        if !applyNamespaces.Has(namespaceName) {
+            log.Info("Deleting LimitRange for namespace no longer in applyNamespaces", "namespace", namespaceName)
+            if err := r.Delete(ctx, &ns); err != nil {
+                log.Error(err, "unable to delete LimitRange for namespace", "namespace", namespaceName)
+                return ctrl.Result{}, err
+            }
+        }
     }
 
     return ctrl.Result{}, nil
