@@ -1,0 +1,9 @@
+apiVersion: lag0.com.br/v1
+kind: ClusterLimitRange
+metadata:
+  labels:
+    app.kubernetes.io/name: cluster-limit-range-controller
+    app.kubernetes.io/managed-by: kustomize
+  name: clusterlimitrange-sample
+spec:
+# TODO(user): Add fields here

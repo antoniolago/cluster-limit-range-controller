@@ -1,0 +1,27 @@
+# permissions for end users to edit clusterlimitranges.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: cluster-limit-range-controller
+    app.kubernetes.io/managed-by: kustomize
+  name: clusterlimitrange-editor-role
+rules:
+- apiGroups:
+  - lag0.com.br
+  resources:
+  - clusterlimitranges
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - lag0.com.br
+  resources:
+  - clusterlimitranges/status
+  verbs:
+  - get

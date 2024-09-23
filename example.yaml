@@ -1,0 +1,27 @@
+apiVersion: lag0.com.br/v1
+kind: ClusterLimitRange
+metadata:
+  name: default-cluster-lr
+spec:
+  ignoredNamespaces:
+  - kube-system
+  - kube-public
+  # applyNamespaces:
+  # - dev
+  # - staging
+  limits:
+  - type: Container
+    max:
+      cpu: "1"
+      memory: "1Gi"
+    # min:
+#   cpu: "200m"
+#   memory: "256Mi"
+# default:
+#   cpu: "500m"
+#   memory: "1Gi"
+# defaultRequest:
+#   cpu: "300m"
+#   memory: "512Mi"
+# maxLimitRequestRatio:
+#   cpu: "4"

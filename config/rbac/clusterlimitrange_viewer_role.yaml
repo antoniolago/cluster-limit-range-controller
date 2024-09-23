@@ -1,0 +1,23 @@
+# permissions for end users to view clusterlimitranges.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: cluster-limit-range-controller
+    app.kubernetes.io/managed-by: kustomize
+  name: clusterlimitrange-viewer-role
+rules:
+- apiGroups:
+  - lag0.com.br
+  resources:
+  - clusterlimitranges
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - lag0.com.br
+  resources:
+  - clusterlimitranges/status
+  verbs:
+  - get
