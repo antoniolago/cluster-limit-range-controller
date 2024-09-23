@@ -18,15 +18,14 @@ package controller
 
 import (
 	"context"
-    "fmt"
+    "errors"
     corev1 "k8s.io/api/core/v1"
     metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
+    "k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-
 	lag0v1 "lag0.com.br/cluster-limit-range-controller/api/v1"
 )
 
@@ -45,7 +44,7 @@ func (r *ClusterLimitRangeReconciler) Reconcile(ctx context.Context, req ctrl.Re
     log := log.FromContext(ctx)
 
     // Fetch the ClusterLimitRange instance
-    var clr myv1.ClusterLimitRange
+    var clr lag0v1.ClusterLimitRange
     if err := r.Get(ctx, req.NamespacedName, &clr); err != nil {
         if errors.IsNotFound(err) {
             return ctrl.Result{}, nil // Resource not found, ignore
