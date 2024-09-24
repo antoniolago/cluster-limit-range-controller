@@ -8,6 +8,7 @@ spec:
   - kube-public
   - flux-system
   - system
+  - domain-vars
   # applyNamespaces:
   # - dev
   # - staging
