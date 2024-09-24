@@ -227,8 +227,11 @@ func (r *ClusterLimitRangeReconciler) SetupWithManager(mgr ctrl.Manager) error {
         For(&lag0v1.ClusterLimitRange{}).
         // Watch for changes to LimitRange objects and enqueue reconcile requests
         Watches(
-            &source.Kind{Type: &corev1.LimitRange{}}, 
-            &handler.EnqueueRequestForObject{},
+            &source.Kind{Type: &corev1.LimitRange{}},
+            &handler.EnqueueRequestForOwner{
+                OwnerType:    &lag0v1.ClusterLimitRange{},
+                IsController: true,
+            },
         ).
         Complete(r)
 }
