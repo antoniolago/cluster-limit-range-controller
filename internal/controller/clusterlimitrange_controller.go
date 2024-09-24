@@ -222,11 +222,13 @@ func translateClusterLimits(clusterLimits []lag0v1.LimitRangeItem) []corev1.Limi
     return limitRangeItems
 }
 
-// SetupWithManager sets up the controller with the Manager
 func (r *ClusterLimitRangeReconciler) SetupWithManager(mgr ctrl.Manager) error {
     return ctrl.NewControllerManagedBy(mgr).
         For(&lag0v1.ClusterLimitRange{}).
-        Watches(&source.Kind{Type: &corev1.Namespace{}}, &handler.EnqueueRequestForObject{}).
-        Watches(&source.Kind{Type: &corev1.LimitRange{}}, &handler.EnqueueRequestForObject{}).
+        // Watch for changes to LimitRange objects and enqueue reconcile requests
+        Watches(
+            &source.Kind{Type: &corev1.LimitRange{}}, 
+            &handler.EnqueueRequestForObject{},
+        ).
         Complete(r)
 }
