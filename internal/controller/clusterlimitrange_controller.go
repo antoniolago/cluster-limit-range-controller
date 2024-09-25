@@ -231,20 +231,13 @@ func (r *ClusterLimitRangeReconciler) SetupWithManager(mgr ctrl.Manager) error {
         Watches(
             source.Kind(
 				mgr.GetCache(), 
-			&appsv1.LimitRange{},
-			handler.TypedEnqueueRequestForOwner[*appsv1.LimitRange](
-				mgr.GetScheme(), 
-				mgr.GetRESTMapper(), 
-				&appsv1.Deployment{}, 
-				handler.OnlyControllerOwner()
-			))
-			// ),
-            // handler.EnqueueRequestForOwner(
-            //     mgr.GetScheme(), 
-            //     mgr.GetRESTMapper(), 
-            //     &lag0v1.ClusterLimitRange{},
-            //     handler.OnlyControllerOwner(),
-            // ),
-        ).
-        Complete(r)
+				&appsv1.LimitRange{},
+				handler.TypedEnqueueRequestForOwner[*appsv1.LimitRange](
+					mgr.GetScheme(), 
+					mgr.GetRESTMapper(), 
+					&appsv1.Deployment{}, 
+					handler.OnlyControllerOwner()
+				)
+			)
+        ).Complete(r)
 }
