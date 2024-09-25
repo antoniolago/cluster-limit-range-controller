@@ -15,15 +15,13 @@ spec:
   limits:
   - type: Container
     max:
-      ephemeral-storage: "9Gi"
-    # min:
-#   cpu: "200m"
-#   memory: "256Mi"
-# default:
-#   cpu: "500m"
-#   memory: "1Gi"
-# defaultRequest:
-#   cpu: "300m"
-#   memory: "512Mi"
-# maxLimitRequestRatio:
+      ephemeral-storage: "2Gi"
+      # min:
+      #   cpu: "200m"
+      #   memory: "256Mi"
+      defaultLimit:
+        ephemeral-storage: "1Gi"
+      defaultRequest:
+        ephemeral-storage: "200Mi"
+      # maxLimitRequestRatio:
 #   cpu: "4"
