@@ -17,11 +17,11 @@ spec:
     max:
       ephemeral-storage: "2Gi"
       # min:
-      #   cpu: "200m"
-      #   memory: "256Mi"
-      defaultLimit:
-        ephemeral-storage: "1Gi"
-      defaultRequest:
-        ephemeral-storage: "200Mi"
+    #   cpu: "200m"
+    #   memory: "256Mi"
+    default:
+      ephemeral-storage: "500Mi"
+    defaultRequest:
+      ephemeral-storage: "100Mi"
       # maxLimitRequestRatio:
 #   cpu: "4"
